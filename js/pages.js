@@ -1,6 +1,6 @@
 // Templates for the home screen and the service pages (build a project, consultation, showcase).
 
-import { esc, icon, shapeSvg, shapeIcon, heroMarkHTML, cardHTML, countLabel } from './views.js';
+import { esc, icon, shapeSvg, shapeIcon, heroMarkHTML, countLabel } from './views.js';
 import { FORMS } from './requests.js';
 
 export const NAV = [
@@ -46,7 +46,7 @@ function whatsAppButtonHTML(link, label) {
     : `<button type="button" class="btn btn-whatsapp btn-lg btn-inline" disabled>${icon('whatsapp')} ${esc(label)} <span class="pill">قريباً</span></button>`;
 }
 
-export function homeHTML({ categories, total, featured, qtyOf, catName, contactLink }) {
+export function homeHTML({ categories, total, contactLink, email }) {
   return `
     <div class="home">
       <section class="hero" aria-labelledby="hero-title">
@@ -121,14 +121,6 @@ export function homeHTML({ categories, total, featured, qtyOf, catName, contactL
         </ul>
       </section>
 
-      <section class="wrap section" aria-labelledby="featured-title">
-        <header class="section-head section-head-row">
-          <h2 id="featured-title">من المتجر</h2>
-          <a class="section-more" href="#/store">كل المنتجات <span aria-hidden="true">‹</span></a>
-        </header>
-        <ul class="grid">${featured.map((p) => cardHTML(p, qtyOf(p.id), catName(p.cat))).join('')}</ul>
-      </section>
-
       <section class="wrap section" aria-labelledby="showcase-title">
         <div class="panel panel-split">
           <div>
@@ -143,9 +135,12 @@ export function homeHTML({ categories, total, featured, qtyOf, catName, contactL
         <div class="panel panel-split panel-tint">
           <div>
             <h2 id="contact-title">تواصل معنا</h2>
-            <p>لأي سؤال عن منتج أو خدمة، راسلنا مباشرة على واتساب.</p>
+            <p>لأي سؤال عن منتج أو خدمة، راسلنا على واتساب${email ? ' أو عبر البريد الإلكتروني' : ''}.</p>
           </div>
-          ${whatsAppButtonHTML(contactLink, 'راسلنا على واتساب')}
+          <div class="contact-actions">
+            ${whatsAppButtonHTML(contactLink, 'راسلنا على واتساب')}
+            ${email ? `<a class="btn btn-ghost btn-lg btn-inline" href="mailto:${esc(email)}" dir="ltr">${esc(email)}</a>` : ''}
+          </div>
         </div>
       </section>
     </div>`;

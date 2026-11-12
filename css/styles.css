@@ -246,6 +246,10 @@ button, input, select { font: inherit; color: inherit; }
 .panel-tint { background: var(--tint); border-color: transparent; }
 .panel-split { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 32px; }
 .panel-split > div { flex: 1 1 320px; }
+.panel-split > .contact-actions { flex: 0 1 auto; display: flex; flex-wrap: wrap; gap: 10px; }
+.footer-contact a { color: var(--blue-strong); text-decoration: none; font-weight: 500; }
+.footer-contact a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.footer-contact:empty { display: none; }
 .panel p { color: var(--ink-soft); margin-top: 6px; max-width: 60ch; }
 .btn.btn-inline { width: auto; }
 @media (max-width: 599px) {

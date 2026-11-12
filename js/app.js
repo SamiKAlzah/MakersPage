@@ -8,7 +8,7 @@ import * as P from './pages.js';
 import { formatSar } from './money.js';
 import { orderUrl } from './order.js';
 import { FORMS, COURSES_TOPIC, readValues, validate, requestUrl, contactUrl } from './requests.js';
-import { WHATSAPP_NUMBER } from './config.js';
+import { WHATSAPP_NUMBER, CONTACT_EMAIL } from './config.js';
 
 const SITE_TITLE = 'صانع — متجر إلكترونيات IoT و STEAM';
 const DEFAULT_FILTERS = { cat: 'all', type: 'all', query: '', sort: 'default' };
@@ -64,6 +64,9 @@ async function init() {
   state.cart = Cart.load(storage, state.byId);
   $('#main-nav').innerHTML = P.NAV.map((n) => `<a href="${n.href}" data-nav="${n.id}">${n.label}</a>`).join('');
   $('#footer-nav').innerHTML = P.NAV.map((n) => `<a href="${n.href}">${n.label}</a>`).join('');
+  if (CONTACT_EMAIL) {
+    $('#footer-contact').innerHTML = `<a href="mailto:${V.esc(CONTACT_EMAIL)}" dir="ltr">${V.esc(CONTACT_EMAIL)}</a>`;
+  }
   bindEvents();
   renderCart();
   onRoute();
@@ -107,14 +110,11 @@ function onRoute() {
 /* ---------- Home and service pages ---------- */
 
 function renderHome() {
-  const featured = state.categories.flatMap((c) => state.products.filter((p) => p.cat === c.id).slice(0, 2)).slice(0, 8);
   main.innerHTML = P.homeHTML({
     categories: state.categories,
     total: state.products.length,
-    featured,
-    qtyOf,
-    catName,
     contactLink: contactUrl(WHATSAPP_NUMBER),
+    email: CONTACT_EMAIL,
   });
   document.title = SITE_TITLE;
 }
