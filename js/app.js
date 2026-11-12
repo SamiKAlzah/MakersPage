@@ -1,21 +1,23 @@
-// Storefront wiring: loads the catalog, routes between the product list and product pages,
-// and keeps every add-to-cart control and the cart drawer in sync with the cart.
+// Site wiring: loads the catalog, routes between the home screen, the store, product pages and
+// the service pages, and keeps every add-to-cart control and the cart drawer in sync with the cart.
 
 import * as Cart from './cart.js';
 import { indexProducts, filterProducts, countByCategory, sortProducts } from './catalog.js';
 import * as V from './views.js';
+import * as P from './pages.js';
 import { formatSar } from './money.js';
 import { orderUrl } from './order.js';
+import { FORMS, COURSES_TOPIC, readValues, validate, requestUrl, contactUrl } from './requests.js';
 import { WHATSAPP_NUMBER } from './config.js';
 
-const SITE_TITLE = 'صانع — متجر الإلكترونيات والروبوتات التعليمية';
+const SITE_TITLE = 'صانع — متجر إلكترونيات IoT و STEAM';
 const DEFAULT_FILTERS = { cat: 'all', type: 'all', query: '', sort: 'default' };
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const main = $('#main');
+const header = $('#site-header');
 const drawer = $('#cart');
-const searchInput = $('#q');
-const pageChrome = [$('#site-header'), main, $('#site-footer'), $('#cart-bar')];
+const pageChrome = [header, main, $('#site-footer'), $('#cart-bar')];
 
 const state = {
   products: [],
@@ -25,6 +27,7 @@ const state = {
   types: [],
   cart: [],
   filters: { ...DEFAULT_FILTERS },
+  keepQuery: false,
   route: null,
   listScroll: { cat: null, y: 0 },
 };
@@ -38,6 +41,7 @@ const storage = (() => {
 })();
 
 const qtyOf = (id) => Cart.qtyOf(state.cart, id);
+const catName = (id) => state.catById.get(id).name;
 
 init();
 
@@ -58,6 +62,8 @@ async function init() {
     return;
   }
   state.cart = Cart.load(storage, state.byId);
+  $('#main-nav').innerHTML = P.NAV.map((n) => `<a href="${n.href}" data-nav="${n.id}">${n.label}</a>`).join('');
+  $('#footer-nav').innerHTML = P.NAV.map((n) => `<a href="${n.href}">${n.label}</a>`).join('');
   bindEvents();
   renderCart();
   onRoute();
@@ -67,9 +73,11 @@ async function init() {
 
 function parseRoute() {
   const [kind, value] = location.hash.replace(/^#\/?/, '').split('/');
-  if (kind === 'p' && value) return { name: 'product', id: Number(value) };
-  if (kind === 'c' && state.catById.has(value)) return { name: 'list', cat: value };
-  return { name: 'list', cat: 'all' };
+  if (kind === 'p' && value) return { name: 'product', id: Number(value), nav: 'store' };
+  if (kind === 'c' && state.catById.has(value)) return { name: 'list', cat: value, nav: 'store' };
+  if (kind === 'store') return { name: 'list', cat: 'all', nav: 'store' };
+  if (FORMS[kind]) return { name: 'request', kind, preset: value, nav: kind };
+  return { name: 'home', nav: 'home' };
 }
 
 function onRoute() {
@@ -80,27 +88,100 @@ function onRoute() {
   }
   state.route = route;
   closeCart({ restoreFocus: false });
-
-  if (route.name === 'product') {
-    renderProduct(route.id);
-    window.scrollTo(0, 0);
-    return;
+  closeMenu();
+  for (const link of document.querySelectorAll('#main-nav [data-nav]')) {
+    if (link.dataset.nav === route.nav) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
   }
 
+  if (route.name === 'list') {
+    showList(prev, route);
+    return;
+  }
+  if (route.name === 'product') renderProduct(route.id);
+  else if (route.name === 'request') renderRequest(route);
+  else renderHome();
+  window.scrollTo(0, 0);
+}
+
+/* ---------- Home and service pages ---------- */
+
+function renderHome() {
+  const featured = state.categories.flatMap((c) => state.products.filter((p) => p.cat === c.id).slice(0, 2)).slice(0, 8);
+  main.innerHTML = P.homeHTML({
+    categories: state.categories,
+    total: state.products.length,
+    featured,
+    qtyOf,
+    catName,
+    contactLink: contactUrl(WHATSAPP_NUMBER),
+  });
+  document.title = SITE_TITLE;
+}
+
+function renderRequest(route) {
+  const presets = route.kind === 'consult' && route.preset === 'courses' ? { topic: COURSES_TOPIC } : {};
+  main.innerHTML = P.requestPageHTML(route.kind, { enabled: Boolean(contactUrl(WHATSAPP_NUMBER)), presets });
+  document.title = `${FORMS[route.kind].title} — صانع`;
+}
+
+function setFieldError(form, name, message) {
+  const wrap = $(`[data-field="${name}"]`, form);
+  if (!wrap) return;
+  const error = $('.field-error', wrap);
+  const control = $('input, select, textarea', wrap);
+  error.textContent = message ?? '';
+  error.hidden = !message;
+  if (message) control.setAttribute('aria-invalid', 'true');
+  else control.removeAttribute('aria-invalid');
+}
+
+/** Validate a service form and, if it is complete, open WhatsApp with the request typed in. */
+function submitRequest(form) {
+  const kind = form.dataset.request;
+  const raw = Object.fromEntries(new FormData(form));
+  const errors = validate(kind, readValues(kind, raw));
+  for (const field of FORMS[kind].fields) setFieldError(form, field.name, errors[field.name]);
+
+  const status = $('.form-status', form);
+  const firstBad = FORMS[kind].fields.find((f) => errors[f.name]);
+  if (firstBad) {
+    status.textContent = 'راجع الحقول المشار إليها ثم أعد الإرسال.';
+    $(`[data-field="${firstBad.name}"] :is(input, select, textarea)`, form).focus();
+    return;
+  }
+  const url = requestUrl(WHATSAPP_NUMBER, kind, raw);
+  if (!url) {
+    status.textContent = 'الإرسال عبر واتساب غير مفعّل بعد.';
+    return;
+  }
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.click();
+  status.textContent = 'فُتح واتساب برسالة جاهزة — اضغط «إرسال» هناك لإتمام طلبك.';
+}
+
+/* ---------- Store list ---------- */
+
+function showList(prev, route) {
   state.filters.cat = route.cat;
   if (prev?.name === 'list') {
     updateList();
-    const listTop = $('#list-view .cats').offsetTop - $('#site-header').offsetHeight;
+    const listTop = $('#list-view .cats').offsetTop - header.offsetHeight;
     if (window.scrollY > listTop) window.scrollTo(0, listTop);
-  } else {
-    main.innerHTML = V.listShellHTML({ total: state.products.length, types: state.types, filters: state.filters });
-    updateList();
-    const back = prev?.name === 'product' && state.listScroll.cat === route.cat;
-    window.scrollTo(0, back ? state.listScroll.y : 0);
+    return;
   }
+  // Arriving from another section starts a fresh search, unless the home search sent us here
+  // or we are coming back from a product page.
+  if (prev?.name !== 'product' && !state.keepQuery) state.filters.query = '';
+  state.keepQuery = false;
+  main.innerHTML = V.storeShellHTML({ types: state.types, filters: state.filters });
+  updateList();
+  const back = prev?.name === 'product' && state.listScroll.cat === route.cat;
+  window.scrollTo(0, back ? state.listScroll.y : 0);
 }
-
-/* ---------- Product list ---------- */
 
 function updateList() {
   const f = state.filters;
@@ -113,31 +194,26 @@ function updateList() {
   chips.scrollLeft = chipScroll;
   $('.chip.is-active', chips)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 
-  $('#list-view').classList.toggle('is-searching', Boolean(query));
-  $('#list-title').textContent = query
-    ? `نتائج البحث عن «${query}»`
-    : f.cat === 'all'
-      ? 'كل المنتجات'
-      : state.catById.get(f.cat).name;
+  $('#list-title').textContent = query ? `نتائج البحث عن «${query}»` : f.cat === 'all' ? 'كل المنتجات' : catName(f.cat);
   $('#list-count').textContent = V.countLabel(list.length);
-  $('#grid').innerHTML = list.map((p) => V.cardHTML(p, qtyOf(p.id), state.catById.get(p.cat).name)).join('');
+  $('#grid').innerHTML = list.map((p) => V.cardHTML(p, qtyOf(p.id), catName(p.cat))).join('');
 
   const empty = $('#empty');
   empty.hidden = list.length > 0;
   empty.innerHTML = list.length ? '' : V.emptyListHTML(query);
 
-  document.title = f.cat === 'all' ? SITE_TITLE : `${state.catById.get(f.cat).name} — صانع`;
+  document.title = f.cat === 'all' ? 'المتجر — صانع' : `${catName(f.cat)} — صانع`;
 }
 
 function resetFilters() {
   state.filters = { ...DEFAULT_FILTERS };
-  searchInput.value = '';
   if (state.route.name === 'list' && state.route.cat === 'all') {
+    $('#q').value = '';
     $('#filter-type').value = 'all';
     $('#sort').value = 'default';
     updateList();
   } else {
-    location.hash = '#/';
+    location.hash = '#/store';
   }
 }
 
@@ -175,8 +251,8 @@ function showGalleryImage(button) {
   img.width = image.w;
   img.height = image.h;
   for (const thumb of document.querySelectorAll('.thumb')) {
-    thumb.toggleAttribute('aria-current', thumb === button);
     if (thumb === button) thumb.setAttribute('aria-current', 'true');
+    else thumb.removeAttribute('aria-current');
   }
 }
 
@@ -254,6 +330,7 @@ function clearCart(button) {
 let lastFocus = null;
 function openCart(opener) {
   if (document.body.classList.contains('cart-open')) return;
+  closeMenu();
   lastFocus = opener ?? document.activeElement;
   document.body.classList.add('cart-open');
   drawer.inert = false;
@@ -270,6 +347,14 @@ function closeCart({ restoreFocus = true } = {}) {
   lastFocus = null;
 }
 
+/* ---------- Main menu (collapses behind a button on small screens) ---------- */
+
+function setMenu(open) {
+  header.classList.toggle('nav-open', open);
+  $('#menu-toggle').setAttribute('aria-expanded', String(open));
+}
+const closeMenu = () => setMenu(false);
+
 let toastTimer = 0;
 function toast(message) {
   const el = $('#toast');
@@ -284,21 +369,17 @@ function toast(message) {
 function bindEvents() {
   window.addEventListener('hashchange', onRoute);
 
-  // The search field is narrow on phones, so it gets a shorter hint there.
-  const narrow = window.matchMedia('(max-width: 719px)');
-  const setHint = () => {
-    searchInput.placeholder = narrow.matches ? 'ابحث…' : 'ابحث عن منتج، حساس، لوحة…';
-  };
-  narrow.addEventListener('change', setHint);
-  setHint();
-
   document.addEventListener('click', (event) => {
+    if (header.classList.contains('nav-open') && !event.target.closest('#main-nav, #menu-toggle')) closeMenu();
+
     const el = event.target.closest(
-      '[data-add],[data-inc],[data-dec],[data-remove],[data-open-cart],[data-close-cart],[data-clear-cart],[data-thumb],[data-reset-filters]',
+      '[data-add],[data-inc],[data-dec],[data-remove],[data-open-cart],[data-close-cart],[data-clear-cart],[data-thumb],[data-reset-filters],#menu-toggle,#main-nav a',
     );
     if (!el) return;
     const d = el.dataset;
-    if (d.add) changeQty(el, 'add', Number(d.add), 1);
+    if (el.id === 'menu-toggle') setMenu(!header.classList.contains('nav-open'));
+    else if (el.closest('#main-nav')) closeMenu();
+    else if (d.add) changeQty(el, 'add', Number(d.add), 1);
     else if (d.inc) changeQty(el, 'inc', Number(d.inc), 1);
     else if (d.dec) changeQty(el, 'dec', Number(d.dec), -1);
     else if (d.remove) changeQty(el, 'remove', Number(d.remove), 0);
@@ -310,7 +391,13 @@ function bindEvents() {
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') closeCart();
+    if (event.key !== 'Escape') return;
+    if (header.classList.contains('nav-open')) {
+      closeMenu();
+      $('#menu-toggle').focus();
+    } else {
+      closeCart();
+    }
   });
 
   document.addEventListener('change', (event) => {
@@ -321,22 +408,35 @@ function bindEvents() {
   });
 
   let searchTimer = 0;
-  searchInput.addEventListener('input', () => {
+  document.addEventListener('input', (event) => {
+    const target = event.target;
+    const form = target.closest('.request-form');
+    if (form && target.name) setFieldError(form, target.name, '');
+    if (target.id !== 'q') return;
+
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
-      state.filters.query = searchInput.value;
-      const onAllList = state.route.name === 'list' && state.route.cat === 'all';
+      state.filters.query = target.value;
+      if (state.route.name !== 'list') return;
       // A search looks across the whole catalog, so it always runs from the "all products" list.
-      if (onAllList || !searchInput.value.trim()) {
-        if (state.route.name === 'list') updateList();
-      } else {
-        location.hash = '#/';
-      }
+      if (state.route.cat !== 'all' && target.value.trim()) location.hash = '#/store';
+      else updateList();
     }, 160);
   });
 
-  $('#search-form').addEventListener('submit', (event) => {
-    event.preventDefault();
-    searchInput.blur();
+  document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (form.id === 'search-form') {
+      event.preventDefault();
+      $('#q').blur();
+    } else if (form.id === 'home-search') {
+      event.preventDefault();
+      state.filters = { ...DEFAULT_FILTERS, query: new FormData(form).get('q').trim() };
+      state.keepQuery = true;
+      location.hash = '#/store';
+    } else if (form.dataset.request) {
+      event.preventDefault();
+      submitRequest(form);
+    }
   });
 }

@@ -12,7 +12,7 @@ export const CATEGORY_STYLE = {
 };
 
 /** The logo mark redrawn as vector art in the logo's colours, for use on the dark hero. */
-function heroMarkHTML() {
+export function heroMarkHTML() {
   const ring = (cx, cy, radius, count, r) =>
     Array.from({ length: count }, (_, i) => {
       const a = (2 * Math.PI * i) / count - Math.PI / 2;
@@ -39,9 +39,14 @@ function heroMarkHTML() {
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ESCAPES[c]);
 
-const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+export const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 
-function shapeIcon(catId) {
+/** One of the logo shapes by name, in a brand tone. */
+export function shapeSvg(shape, tone) {
+  return `<svg class="shape tone-${tone}" aria-hidden="true"><use href="#s-${shape}"/></svg>`;
+}
+
+export function shapeIcon(catId) {
   const style = CATEGORY_STYLE[catId] ?? { shape: 'frame', tone: 'blue' };
   return `<svg class="shape tone-${style.tone}" aria-hidden="true"><use href="#s-${style.shape}"/></svg>`;
 }
@@ -133,24 +138,28 @@ export function chipsHTML(categories, counts, active) {
       ${shape}<span>${esc(name)}</span><span class="chip-count">${counts[id] ?? 0}</span>
     </a>`;
   return (
-    chip('all', 'الكل', '#/', '') +
+    chip('all', 'الكل', '#/store', '') +
     categories.map((c) => chip(c.id, c.name, `#/c/${c.id}`, shapeIcon(c.id))).join('')
   );
 }
 
-export function listShellHTML({ total, types, filters }) {
+export function storeShellHTML({ types, filters }) {
   const option = (value, label, current) =>
     `<option value="${esc(value)}"${value === current ? ' selected' : ''}>${esc(label)}</option>`;
   return `
     <div class="list-view" id="list-view">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="wrap hero-inner">
-          <div class="hero-copy">
-            <p class="eyebrow">متجر صانع</p>
-            <h1 id="hero-title">كل ما تحتاجه لتبني مشروعك القادم</h1>
-            <p class="lead">${total} منتجاً من لوحات أردوينو والحساسات وحقائب الروبوتات التعليمية والألعاب الإلكترونية. اختر ما يناسبك وأضفه إلى السلة.</p>
+      <section class="store-head">
+        <div class="wrap store-head-inner">
+          <div class="store-head-copy">
+            <h1>المتجر</h1>
+            <p>أدوات إنترنت الأشياء، لوحات التطوير، الحساسات وحقائب الروبوتات.</p>
           </div>
-          ${heroMarkHTML()}
+          <form class="search" role="search" id="search-form">
+            <label class="visually-hidden" for="q">ابحث في المنتجات</label>
+            ${icon('search')}
+            <input id="q" type="search" inputmode="search" enterkeyhint="search" autocomplete="off"
+              placeholder="ابحث عن منتج، حساس، لوحة…" value="${esc(filters.query)}">
+          </form>
         </div>
       </section>
 
@@ -222,7 +231,7 @@ export function detailHTML({ product, qty, category, related, qtyOf }) {
   return `
     <div class="wrap detail">
       <nav class="crumbs" aria-label="مسار التنقل">
-        <a href="#/">كل المنتجات</a><span aria-hidden="true">‹</span><a href="#/c/${category.id}">${esc(category.name)}</a>
+        <a href="#/store">المتجر</a><span aria-hidden="true">‹</span><a href="#/c/${category.id}">${esc(category.name)}</a>
       </nav>
       <article class="detail-grid">
         <div class="gallery">
@@ -269,7 +278,7 @@ export function notFoundHTML() {
       <div class="empty-shapes" aria-hidden="true">${shapeIcon('accessories')}</div>
       <h1>هذا المنتج غير موجود</h1>
       <p>ربما تغيّر الرابط أو لم يعد المنتج متوفراً.</p>
-      <a class="btn btn-primary" href="#/">تصفّح كل المنتجات</a>
+      <a class="btn btn-primary" href="#/store">تصفّح كل المنتجات</a>
     </div>`;
 }
 
