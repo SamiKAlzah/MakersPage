@@ -8,7 +8,7 @@ import * as P from './pages.js';
 import { formatSar } from './money.js';
 import { orderUrl } from './order.js';
 import { FORMS, COURSES_TOPIC, readValues, validate, requestUrl, contactUrl } from './requests.js';
-import { WHATSAPP_NUMBER, CONTACT_EMAIL } from './config.js';
+import { WHATSAPP_NUMBER, CONTACT_EMAIL, SOCIAL, BUSINESS } from './config.js';
 
 const SITE_TITLE = 'صانع — متجر إلكترونيات IoT و STEAM';
 const DEFAULT_FILTERS = { cat: 'all', type: 'all', query: '', sort: 'default' };
@@ -67,6 +67,8 @@ async function init() {
   if (CONTACT_EMAIL) {
     $('#footer-contact').innerHTML = `<a href="mailto:${V.esc(CONTACT_EMAIL)}" dir="ltr">${V.esc(CONTACT_EMAIL)}</a>`;
   }
+  $('#footer-social').innerHTML = P.socialHTML(SOCIAL);
+  $('#footer-legal').innerHTML = P.legalHTML(BUSINESS);
   bindEvents();
   renderCart();
   onRoute();
@@ -90,6 +92,7 @@ function onRoute() {
     state.listScroll = { cat: prev.cat, y: window.scrollY };
   }
   state.route = route;
+  stopCarousel();
   closeCart({ restoreFocus: false });
   closeMenu();
   for (const link of document.querySelectorAll('#main-nav [data-nav]')) {
@@ -115,8 +118,100 @@ function renderHome() {
     total: state.products.length,
     contactLink: contactUrl(WHATSAPP_NUMBER),
     email: CONTACT_EMAIL,
+    social: SOCIAL,
   });
   document.title = SITE_TITLE;
+  setupCarousel();
+}
+
+/* ---------- Home banner slider ---------- */
+
+const SLIDE_INTERVAL_MS = 5000;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const carousel = { root: null, index: 0, timer: 0, userPaused: false, hovered: false, focused: false, dragX: null, dragged: false };
+
+function setupCarousel() {
+  const root = $('#banner-carousel');
+  carousel.root = root;
+  if (!root) return;
+  carousel.index = 0;
+  carousel.hovered = false;
+  carousel.focused = false;
+  // People who ask their device for less motion get a still banner they can page through themselves.
+  carousel.userPaused = reducedMotion.matches;
+  showSlide(0);
+  updateToggle();
+
+  root.addEventListener('mouseenter', () => { carousel.hovered = true; schedule(); });
+  root.addEventListener('mouseleave', () => { carousel.hovered = false; schedule(); });
+  root.addEventListener('focusin', () => { carousel.focused = true; schedule(); });
+  root.addEventListener('focusout', (e) => {
+    if (!root.contains(e.relatedTarget)) { carousel.focused = false; schedule(); }
+  });
+
+  // Swipe on touch screens. In right-to-left the next banner sits to the left, so a rightward swipe moves forward.
+  const viewport = $('.carousel-viewport', root);
+  viewport.addEventListener('pointerdown', (e) => { carousel.dragX = e.clientX; carousel.dragged = false; });
+  viewport.addEventListener('pointerup', (e) => {
+    if (carousel.dragX === null) return;
+    const dx = e.clientX - carousel.dragX;
+    carousel.dragX = null;
+    if (Math.abs(dx) < 40) return;
+    carousel.dragged = true;
+    showSlide(carousel.index + (dx > 0 ? 1 : -1));
+    schedule();
+  });
+  viewport.addEventListener('pointercancel', () => { carousel.dragX = null; });
+  // A swipe must not also open the banner's link.
+  viewport.addEventListener('click', (e) => {
+    if (carousel.dragged) { e.preventDefault(); carousel.dragged = false; }
+  }, true);
+
+  schedule();
+}
+
+function showSlide(i) {
+  const root = carousel.root;
+  const slides = root.querySelectorAll('.carousel-slide');
+  const n = slides.length;
+  carousel.index = ((i % n) + n) % n;
+  // The track runs right-to-left, so moving it right brings the next banner into view.
+  $('#carousel-track').style.transform = `translateX(${carousel.index * 100}%)`;
+  slides.forEach((slide, k) => { slide.inert = k !== carousel.index; });
+  root.querySelectorAll('[data-carousel-dot]').forEach((dot, k) => {
+    if (k === carousel.index) dot.setAttribute('aria-current', 'true');
+    else dot.removeAttribute('aria-current');
+  });
+}
+
+function schedule() {
+  clearInterval(carousel.timer);
+  if (!carousel.root?.isConnected) return;
+  if (carousel.userPaused || carousel.hovered || carousel.focused) return;
+  carousel.timer = setInterval(() => showSlide(carousel.index + 1), SLIDE_INTERVAL_MS);
+}
+
+function stopCarousel() {
+  clearInterval(carousel.timer);
+  carousel.root = null;
+}
+
+function updateToggle() {
+  const toggle = $('[data-carousel="toggle"]', carousel.root);
+  toggle.setAttribute('aria-label', carousel.userPaused ? 'تشغيل التمرير التلقائي' : 'إيقاف التمرير التلقائي');
+  toggle.innerHTML = V.icon(carousel.userPaused ? 'play' : 'pause');
+}
+
+function carouselControl(el) {
+  if (!carousel.root) return;
+  if ('carouselDot' in el.dataset) showSlide(Number(el.dataset.carouselDot));
+  else if (el.dataset.carousel === 'next') showSlide(carousel.index + 1);
+  else if (el.dataset.carousel === 'prev') showSlide(carousel.index - 1);
+  else if (el.dataset.carousel === 'toggle') {
+    carousel.userPaused = !carousel.userPaused;
+    updateToggle();
+  }
+  schedule();
 }
 
 function renderRequest(route) {
@@ -374,11 +469,12 @@ function bindEvents() {
     if (header.classList.contains('nav-open') && !event.target.closest('#main-nav, #menu-toggle')) closeMenu();
 
     const el = event.target.closest(
-      '[data-add],[data-inc],[data-dec],[data-remove],[data-open-cart],[data-close-cart],[data-clear-cart],[data-thumb],[data-reset-filters],#menu-toggle,#main-nav a',
+      '[data-add],[data-inc],[data-dec],[data-remove],[data-open-cart],[data-close-cart],[data-clear-cart],[data-thumb],[data-reset-filters],[data-carousel],[data-carousel-dot],#menu-toggle,#main-nav a',
     );
     if (!el) return;
     const d = el.dataset;
-    if (el.id === 'menu-toggle') setMenu(!header.classList.contains('nav-open'));
+    if ('carousel' in d || 'carouselDot' in d) carouselControl(el);
+    else if (el.id === 'menu-toggle') setMenu(!header.classList.contains('nav-open'));
     else if (el.closest('#main-nav')) closeMenu();
     else if (d.add) changeQty(el, 'add', Number(d.add), 1);
     else if (d.inc) changeQty(el, 'inc', Number(d.inc), 1);

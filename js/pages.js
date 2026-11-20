@@ -55,6 +55,69 @@ const PARTNERS = [
   { file: 'green-opportunities', name: 'الفرص الخضراء', w: 159, dark: true },
 ];
 
+/**
+ * The banners as a slider: one banner at a time, advanced every few seconds by app.js (setupCarousel).
+ * Controls sit under the banner so they never cover the text drawn into the images.
+ */
+function carouselHTML() {
+  const n = BANNERS.length;
+  return `
+    <div class="carousel" id="banner-carousel" role="region" aria-roledescription="carousel" aria-label="خدمات صانع المميزة">
+      <div class="carousel-viewport">
+        <div class="carousel-track" id="carousel-track" aria-live="off">
+          ${BANNERS.map(
+            (b, i) => `
+            <div class="carousel-slide" role="group" aria-roledescription="slide" aria-label="${i + 1} من ${n}"${i === 0 ? '' : ' inert'}>
+              <a class="banner" href="${b.href}" draggable="false">
+                <img src="assets/banners/${b.file}-1000.webp"
+                  srcset="assets/banners/${b.file}-1000.webp 1000w, assets/banners/${b.file}-2000.webp 2000w"
+                  sizes="(max-width: 599px) 205vw, (min-width: 1240px) 1192px, 100vw"
+                  width="2000" height="667" alt="${esc(b.alt)}" decoding="async" draggable="false">
+              </a>
+            </div>`,
+          ).join('')}
+        </div>
+      </div>
+      <div class="carousel-controls">
+        <button type="button" class="carousel-btn" data-carousel="prev" aria-label="الشريحة السابقة">${icon('chevron')}</button>
+        <div class="carousel-dots">
+          ${BANNERS.map(
+            (b, i) => `<button type="button" class="carousel-dot" data-carousel-dot="${i}" aria-label="عرض الشريحة ${i + 1}"${i === 0 ? ' aria-current="true"' : ''}></button>`,
+          ).join('')}
+        </div>
+        <button type="button" class="carousel-btn carousel-next" data-carousel="next" aria-label="الشريحة التالية">${icon('chevron')}</button>
+        <button type="button" class="carousel-btn carousel-toggle" data-carousel="toggle" aria-label="إيقاف التمرير التلقائي">${icon('pause')}</button>
+      </div>
+    </div>`;
+}
+
+/** Round icon links to the social accounts. */
+export function socialHTML(social) {
+  return social
+    .map(
+      (s) => `<a class="social-link" href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(s.label)}" title="${esc(s.label)}">${icon(s.id)}</a>`,
+    )
+    .join('');
+}
+
+/** Commercial registration and VAT numbers, laid out like the official badges. */
+export function legalHTML(business) {
+  const item = (img, w, h, label, value) => `
+    <div class="legal-item">
+      <img src="${img}" alt="" width="${w}" height="${h}" loading="lazy">
+      <div>
+        <span class="legal-label">${esc(label)}</span>
+        <span class="legal-value" dir="ltr">${esc(value)}</span>
+      </div>
+    </div>`;
+  return `
+    <p class="legal-name">${esc(business.name)}</p>
+    <div class="legal-items">
+      ${item('assets/legal/cr.webp', 160, 160, 'السجل التجاري', business.cr)}
+      ${item('assets/legal/vat.png', 55, 63, 'الرقم الضريبي', business.vat)}
+    </div>`;
+}
+
 /** The WhatsApp button used on the home screen and service pages; switched off until a number is set. */
 function whatsAppButtonHTML(link, label) {
   return link
@@ -62,7 +125,7 @@ function whatsAppButtonHTML(link, label) {
     : `<button type="button" class="btn btn-whatsapp btn-lg btn-inline" disabled>${icon('whatsapp')} ${esc(label)} <span class="pill">قريباً</span></button>`;
 }
 
-export function homeHTML({ categories, total, contactLink, email }) {
+export function homeHTML({ categories, total, contactLink, email, social = [] }) {
   return `
     <div class="home">
       <section class="hero" aria-labelledby="hero-title">
@@ -90,16 +153,8 @@ export function homeHTML({ categories, total, contactLink, email }) {
         </form>
       </div>
 
-      <section class="wrap section banners" aria-label="خدمات صانع المميزة">
-        ${BANNERS.map(
-          (b, i) => `
-          <a class="banner${i === 0 ? ' banner-wide' : ''}" href="${b.href}">
-            <img src="assets/banners/${b.file}-1000.webp"
-              srcset="assets/banners/${b.file}-1000.webp 1000w, assets/banners/${b.file}-2000.webp 2000w"
-              sizes="${i === 0 ? '(max-width: 599px) 205vw, (min-width: 1240px) 1192px, 100vw' : '(max-width: 599px) 205vw, (min-width: 900px) 50vw, 100vw'}"
-              width="2000" height="667" alt="${esc(b.alt)}"${i === 0 ? '' : ' loading="lazy"'} decoding="async">
-          </a>`,
-        ).join('')}
+      <section class="wrap section">
+        ${carouselHTML()}
       </section>
 
       <section class="wrap section" aria-labelledby="services-title">
@@ -164,6 +219,7 @@ export function homeHTML({ categories, total, contactLink, email }) {
           <div>
             <h2 id="contact-title">تواصل معنا</h2>
             <p>لأي سؤال عن منتج أو خدمة، راسلنا على واتساب${email ? ' أو عبر البريد الإلكتروني' : ''}.</p>
+            ${social.length ? `<div class="social social-contact" aria-label="حساباتنا على وسائل التواصل">${socialHTML(social)}</div>` : ''}
           </div>
           <div class="contact-actions">
             ${whatsAppButtonHTML(contactLink, 'راسلنا على واتساب')}

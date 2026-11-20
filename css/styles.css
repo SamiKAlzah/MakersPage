@@ -256,23 +256,62 @@ button, input, select { font: inherit; color: inherit; }
   .offers .btn, .panel-split .btn { width: 100%; }
 }
 
-/* Banners: the text is part of each image. Phones show the text half at a taller crop so it stays readable. */
-.banners { display: grid; gap: 14px; }
-@media (min-width: 900px) {
-  .banners { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-  .banner-wide { grid-column: 1 / -1; }
+/* Banner slider: one banner at a time. The text is part of each image; phones show its text half
+   at a taller crop so it stays readable. */
+.carousel-viewport {
+  overflow: hidden; border-radius: 20px; background: #283a87;
+  box-shadow: 0 1px 2px rgba(16, 27, 59, 0.08); touch-action: pan-y;
 }
-.banner {
-  display: block; border-radius: 20px; overflow: hidden; background: #283a87;
-  box-shadow: 0 1px 2px rgba(16, 27, 59, 0.08); transition: box-shadow 0.25s, translate 0.25s;
-}
-.banner:hover { box-shadow: var(--shadow); translate: 0 -3px; }
-.banner:focus-visible { outline-offset: 3px; border-radius: 20px; }
-.banner img { width: 100%; height: auto; aspect-ratio: 2000 / 667; object-fit: cover; }
+.carousel-track { display: flex; transition: transform 0.7s cubic-bezier(0.45, 0, 0.2, 1); }
+.carousel-slide { flex: 0 0 100%; min-width: 0; }
+.banner { display: block; user-select: none; -webkit-user-drag: none; }
+.banner:focus-visible { outline: 3px solid #fff; outline-offset: -6px; border-radius: 20px; }
+.banner img { width: 100%; height: auto; aspect-ratio: 2000 / 667; object-fit: cover; pointer-events: none; }
 @media (max-width: 599px) {
-  .banner { border-radius: 16px; }
+  .carousel-viewport { border-radius: 16px; }
   .banner img { aspect-ratio: 1.47; object-position: 100% 50%; }
 }
+.carousel-controls { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; }
+.carousel-btn {
+  width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--line);
+  border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.carousel-btn:hover { background: var(--tint); border-color: var(--line-strong); }
+.carousel-btn .icon { width: 18px; height: 18px; }
+.carousel-next .icon { transform: scaleX(-1); }
+.carousel-toggle { margin-inline-start: 8px; }
+.carousel-dots { display: flex; align-items: center; gap: 2px; padding-inline: 4px; }
+.carousel-dot {
+  width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer;
+  display: grid; place-items: center; border-radius: 50%;
+}
+.carousel-dot::before {
+  content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--line-strong);
+  transition: width 0.3s, background 0.3s;
+}
+.carousel-dot[aria-current="true"]::before { width: 22px; background: var(--blue-strong); }
+@media (prefers-reduced-motion: reduce) { .carousel-track { transition: none; } }
+
+/* Social icons */
+.social { display: flex; flex-wrap: wrap; gap: 10px; }
+.social-contact { margin-top: 14px; }
+.social-link {
+  width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.social-link:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
+.social-link .icon { width: 20px; height: 20px; }
+
+/* Commercial registration and VAT (footer) */
+.legal { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 40px; padding-top: 18px; border-top: 1px solid var(--line); }
+.legal-name { flex-basis: 100%; font-size: 1.05rem; font-weight: 600; color: var(--ink); }
+.legal-items { display: flex; flex-wrap: wrap; gap: 14px 40px; }
+.legal-item { display: flex; align-items: center; gap: 12px; }
+.legal-item img { width: auto; height: 52px; }
+.legal-item div { display: flex; flex-direction: column; line-height: 1.4; }
+.legal-label { color: var(--muted); font-size: 0.9rem; }
+.legal-value { font-weight: 700; font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; text-align: end; }
 
 /* شركاء النجاح */
 .partners { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
