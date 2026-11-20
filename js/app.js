@@ -169,7 +169,8 @@ function showList(prev, route) {
   state.filters.cat = route.cat;
   if (prev?.name === 'list') {
     updateList();
-    const listTop = $('#list-view .cats').offsetTop - header.offsetHeight;
+    // Bring the top of the list just under the pinned header and search bar.
+    const listTop = $('#list-view .listing').offsetTop - header.offsetHeight - $('#store-bar').offsetHeight;
     if (window.scrollY > listTop) window.scrollTo(0, listTop);
     return;
   }

@@ -150,10 +150,14 @@ export function storeShellHTML({ types, filters }) {
     <div class="list-view" id="list-view">
       <section class="store-head">
         <div class="wrap store-head-inner">
-          <div class="store-head-copy">
-            <h1>المتجر</h1>
-            <p>أدوات إنترنت الأشياء، لوحات التطوير، الحساسات وحقائب الروبوتات.</p>
-          </div>
+          <h1>المتجر</h1>
+          <p>أدوات إنترنت الأشياء، لوحات التطوير، الحساسات وحقائب الروبوتات.</p>
+        </div>
+      </section>
+
+      <!-- Search and categories stay pinned under the header while the product list scrolls. -->
+      <div class="store-bar" id="store-bar">
+        <div class="wrap store-bar-search">
           <form class="search" role="search" id="search-form">
             <label class="visually-hidden" for="q">ابحث في المنتجات</label>
             ${icon('search')}
@@ -161,11 +165,10 @@ export function storeShellHTML({ types, filters }) {
               placeholder="ابحث عن منتج، حساس، لوحة…" value="${esc(filters.query)}">
           </form>
         </div>
-      </section>
-
-      <nav class="cats" aria-label="تصنيفات المنتجات">
-        <div class="wrap"><div class="chips" id="chips"></div></div>
-      </nav>
+        <nav class="cats" aria-label="تصنيفات المنتجات">
+          <div class="wrap"><div class="chips" id="chips"></div></div>
+        </nav>
+      </div>
 
       <section class="wrap listing" aria-labelledby="list-title">
         <div class="toolbar">

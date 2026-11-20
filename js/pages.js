@@ -39,6 +39,22 @@ const SERVICES = [
   },
 ];
 
+/** Home-screen banners. The heading, subtitle and button are drawn into each image, so alt repeats them. */
+const BANNERS = [
+  { file: 'build', href: '#/build', alt: 'بناء المشاريع — من فكرتك إلى أول نموذج يعمل. اطلب بناء مشروعك' },
+  { file: 'courses', href: '#/consult/courses', alt: 'الدورات التدريبية والمدربون — تعلّم إنترنت الأشياء بالتطبيق العملي. استكشف الدورات' },
+  { file: 'showcase', href: '#/showcase', alt: 'اعرض مشروعك التقني — شارك ابتكارك مع مجتمع صانع. اعرض مشروعك' },
+];
+
+/** شركاء النجاح. "dark" puts a logo with white lettering on a dark tile so it stays readable. */
+const PARTNERS = [
+  { file: 'sunnaa', name: 'صنّاع', w: 726 },
+  { file: 'iot', name: 'نورتك IoT', w: 272 },
+  { file: 'king-khalid-foundation', name: 'مؤسسة الملك خالد', w: 300 },
+  { file: 'saudi-energy', name: 'السعودية للطاقة', w: 192 },
+  { file: 'green-opportunities', name: 'الفرص الخضراء', w: 159, dark: true },
+];
+
 /** The WhatsApp button used on the home screen and service pages; switched off until a number is set. */
 function whatsAppButtonHTML(link, label) {
   return link
@@ -73,6 +89,18 @@ export function homeHTML({ categories, total, contactLink, email }) {
           <button type="submit" class="btn btn-primary">بحث</button>
         </form>
       </div>
+
+      <section class="wrap section banners" aria-label="خدمات صانع المميزة">
+        ${BANNERS.map(
+          (b, i) => `
+          <a class="banner${i === 0 ? ' banner-wide' : ''}" href="${b.href}">
+            <img src="assets/banners/${b.file}-1000.webp"
+              srcset="assets/banners/${b.file}-1000.webp 1000w, assets/banners/${b.file}-2000.webp 2000w"
+              sizes="${i === 0 ? '(max-width: 599px) 205vw, (min-width: 1240px) 1192px, 100vw' : '(max-width: 599px) 205vw, (min-width: 900px) 50vw, 100vw'}"
+              width="2000" height="667" alt="${esc(b.alt)}"${i === 0 ? '' : ' loading="lazy"'} decoding="async">
+          </a>`,
+        ).join('')}
+      </section>
 
       <section class="wrap section" aria-labelledby="services-title">
         <header class="section-head">
@@ -142,6 +170,20 @@ export function homeHTML({ categories, total, contactLink, email }) {
             ${email ? `<a class="btn btn-ghost btn-lg btn-inline" href="mailto:${esc(email)}" dir="ltr">${esc(email)}</a>` : ''}
           </div>
         </div>
+      </section>
+
+      <section class="wrap section" aria-labelledby="partners-title">
+        <header class="section-head">
+          <h2 id="partners-title">شركاء النجاح</h2>
+        </header>
+        <ul class="partners">
+          ${PARTNERS.map(
+            (p) => `
+            <li class="partner${p.dark ? ' partner-dark' : ''}">
+              <img src="assets/partners/${p.file}.webp" alt="${esc(p.name)}" width="${p.w}" height="160" loading="lazy" decoding="async">
+            </li>`,
+          ).join('')}
+        </ul>
       </section>
     </div>`;
 }
