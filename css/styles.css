@@ -313,25 +313,52 @@ button, input, select { font: inherit; color: inherit; }
 .legal-label { color: var(--muted); font-size: 0.9rem; }
 .legal-value { font-weight: 700; font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; text-align: end; }
 
-/* شركاء النجاح: equal white tiles, logos sized for equal visual weight (see PARTNERS in pages.js).
-   Tiles wrap into centred rows so an odd last tile sits in the middle. */
-.section-head-center { text-align: center; }
-.partners {
-  --cols: 2; --gap: 12px; --logo-scale: 0.78;
-  list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--gap);
+/* شركاء النجاح: a full-width white band with a continuous logo strip that fades out at both edges.
+   Logos are sized for equal visual weight (see PARTNERS in pages.js), no boxes around them. */
+.home:has(.partners-band) { padding-bottom: 0; }
+.partners-band { margin-top: 56px; padding-block: 48px 28px; background: var(--surface); border-top: 1px solid var(--line); }
+.partners-head { text-align: center; margin-bottom: 28px; }
+.partners-head h2 { font-size: clamp(1.6rem, 1.15rem + 1.8vw, 2.4rem); font-weight: 700; line-height: 1.3; color: var(--ink); }
+.partners-head p { margin-top: 6px; color: var(--blue-strong); font-weight: 500; }
+
+.marquee {
+  --logo-scale: 0.72; --logo-gap: 44px;
+  overflow: hidden; direction: ltr; padding-block: 8px;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12%, #000 88%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 12%, #000 88%, transparent 100%);
 }
-@media (min-width: 600px) { .partners { --cols: 3; --gap: 16px; --logo-scale: 0.9; } }
-@media (min-width: 980px) { .partners { --cols: 5; --gap: 18px; --logo-scale: 1; } }
-.partner {
-  flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols));
-  display: grid; place-items: center; height: 136px; padding: 16px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
-  box-shadow: 0 1px 2px rgba(16, 27, 59, 0.05);
-  transition: box-shadow 0.25s, translate 0.25s, border-color 0.25s;
+@media (min-width: 720px) { .marquee { --logo-scale: 0.88; --logo-gap: 64px; } }
+@media (min-width: 1100px) { .marquee { --logo-scale: 1; --logo-gap: 80px; } }
+.marquee-track { display: flex; width: max-content; animation: partners-scroll 36s linear infinite; }
+.marquee-set {
+  display: flex; align-items: center; gap: var(--logo-gap); padding-inline-end: var(--logo-gap);
+  list-style: none; margin: 0; padding-block: 0; padding-inline-start: 0;
 }
-@media (min-width: 980px) { .partner { height: 168px; } }
-.partner:hover { box-shadow: var(--shadow); border-color: var(--line-strong); translate: 0 -3px; }
-.partner img { width: min(calc(var(--logo-w) * var(--logo-scale)), 88%); height: auto; max-height: 82%; object-fit: contain; }
+.marquee-set li { flex: none; display: grid; place-items: center; height: 112px; }
+.marquee-set img {
+  width: calc(var(--logo-w) * var(--logo-scale)); height: auto; max-height: 104px; object-fit: contain;
+  transition: transform 0.3s;
+}
+.marquee-set img:hover { transform: scale(1.06); }
+/* The track holds three copies; moving it by one copy and starting over makes a seamless loop. */
+@keyframes partners-scroll { from { transform: translateX(-33.3333%); } to { transform: translateX(0); } }
+.marquee:hover .marquee-track, .marquee.is-paused .marquee-track { animation-play-state: paused; }
+
+.marquee-toggle {
+  display: grid; place-items: center; width: 36px; height: 36px; margin: 14px auto 0;
+  border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink-soft); cursor: pointer;
+}
+.marquee-toggle:hover { background: var(--tint); color: var(--ink); }
+.marquee-toggle .icon { width: 16px; height: 16px; }
+
+/* Less motion: a still, centred row of logos instead of the moving strip. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee { -webkit-mask-image: none; mask-image: none; direction: rtl; }
+  .marquee-track { animation: none; width: auto; justify-content: center; }
+  .marquee-set { flex-wrap: wrap; justify-content: center; row-gap: 24px; padding-inline-end: 0; }
+  .marquee-set[aria-hidden="true"] { display: none; }
+  .marquee-toggle { display: none; }
+}
 
 /* ---------- Store header ---------- */
 

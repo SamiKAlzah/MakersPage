@@ -202,6 +202,13 @@ function updateToggle() {
   toggle.innerHTML = V.icon(carousel.userPaused ? 'play' : 'pause');
 }
 
+/** Pause or resume the partners logo strip. */
+function toggleMarquee(button) {
+  const paused = $('#partners-marquee').classList.toggle('is-paused');
+  button.setAttribute('aria-label', paused ? 'تشغيل حركة الشعارات' : 'إيقاف حركة الشعارات');
+  button.innerHTML = V.icon(paused ? 'play' : 'pause');
+}
+
 function carouselControl(el) {
   if (!carousel.root) return;
   if ('carouselDot' in el.dataset) showSlide(Number(el.dataset.carouselDot));
@@ -469,11 +476,12 @@ function bindEvents() {
     if (header.classList.contains('nav-open') && !event.target.closest('#main-nav, #menu-toggle')) closeMenu();
 
     const el = event.target.closest(
-      '[data-add],[data-inc],[data-dec],[data-remove],[data-open-cart],[data-close-cart],[data-clear-cart],[data-thumb],[data-reset-filters],[data-carousel],[data-carousel-dot],#menu-toggle,#main-nav a',
+      '[data-add],[data-inc],[data-dec],[data-remove],[data-open-cart],[data-close-cart],[data-clear-cart],[data-thumb],[data-reset-filters],[data-carousel],[data-carousel-dot],[data-marquee-toggle],#menu-toggle,#main-nav a',
     );
     if (!el) return;
     const d = el.dataset;
-    if ('carousel' in d || 'carouselDot' in d) carouselControl(el);
+    if ('marqueeToggle' in d) toggleMarquee(el);
+    else if ('carousel' in d || 'carouselDot' in d) carouselControl(el);
     else if (el.id === 'menu-toggle') setMenu(!header.classList.contains('nav-open'));
     else if (el.closest('#main-nav')) closeMenu();
     else if (d.add) changeQty(el, 'add', Number(d.add), 1);

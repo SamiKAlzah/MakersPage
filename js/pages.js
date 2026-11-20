@@ -58,7 +58,7 @@ const PARTNERS = [
   { file: 'saudi-energy', name: 'السعودية للطاقة', w: 288 },
   { file: 'green-opportunities', name: 'الفرص الخضراء', w: 239 },
 ];
-const LOGO_AREA = 9500; // target logo area in CSS px² on desktop
+const LOGO_AREA = 13500; // target logo area in CSS px² on desktop
 const logoWidth = (p) => Math.round(Math.sqrt(LOGO_AREA * (p.w / 240)) * (p.scale ?? 1));
 
 /**
@@ -236,20 +236,28 @@ export function homeHTML({ categories, total, contactLink, email, social = [] })
         </div>
       </section>
 
-      <section class="wrap section" aria-labelledby="partners-title">
-        <header class="section-head section-head-center">
-          <h2 id="partners-title">شركاء النجاح</h2>
-          <p>جهات نفخر بشراكتها ودعمها لمسيرة صانع.</p>
-        </header>
-        <ul class="partners">
-          ${PARTNERS.map(
-            (p) => `
-            <li class="partner">
-              <img src="assets/partners/${p.file}.webp" alt="${esc(p.name)}" title="${esc(p.name)}"
-                width="${p.w}" height="240" style="--logo-w: ${logoWidth(p)}px" loading="lazy" decoding="async">
-            </li>`,
-          ).join('')}
-        </ul>
+      <section class="partners-band" aria-labelledby="partners-title">
+        <div class="wrap">
+          <header class="partners-head">
+            <h2 id="partners-title">شركاء النجاح</h2>
+            <p>جهات نفخر بشراكتها ودعمها لمسيرة صانع</p>
+          </header>
+          <!-- A continuous strip: the logo set is repeated three times so the loop never shows a gap.
+               Only the first copy is announced to screen readers. -->
+          <div class="marquee" id="partners-marquee">
+            <div class="marquee-track">
+              ${[0, 1, 2].map((copy) => `
+              <ul class="marquee-set"${copy ? ' aria-hidden="true"' : ''}>
+                ${PARTNERS.map(
+                  (p) => `
+                  <li><img src="assets/partners/${p.file}.webp" alt="${copy ? '' : esc(p.name)}"${copy ? '' : ` title="${esc(p.name)}"`}
+                    width="${p.w}" height="240" style="--logo-w: ${logoWidth(p)}px" decoding="async"></li>`,
+                ).join('')}
+              </ul>`).join('')}
+            </div>
+          </div>
+          <button type="button" class="marquee-toggle" data-marquee-toggle aria-label="إيقاف حركة الشعارات">${icon('pause')}</button>
+        </div>
       </section>
     </div>`;
 }
