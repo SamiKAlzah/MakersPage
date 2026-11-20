@@ -15,9 +15,9 @@ export const SOCIAL = [
   { id: 'x', label: 'إكس (تويتر)', url: 'https://x.com/Suna_org' },
 ];
 
-// Legal details shown in the footer (commercial registration and VAT registration).
+// Legal details shown in the footer. Any field left empty ('') is simply not shown.
 export const BUSINESS = {
-  name: 'مؤسسة الحل الخفي التجارية',
-  cr: '7007948727',
-  vat: '310284078100003',
+  name: '', // registered business name, exactly as on the CR certificate — not confirmed yet
+  cr: '7054095224', // commercial registration (السجل التجاري)
+  vat: '', // VAT number (الرقم الضريبي) — not issued yet; the VAT badge appears once this is filled in
 };

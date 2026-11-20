@@ -313,14 +313,25 @@ button, input, select { font: inherit; color: inherit; }
 .legal-label { color: var(--muted); font-size: 0.9rem; }
 .legal-value { font-weight: 700; font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; text-align: end; }
 
-/* شركاء النجاح */
-.partners { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
-.partner {
-  display: grid; place-items: center; height: 120px; padding: 18px 20px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+/* شركاء النجاح: equal white tiles, logos sized for equal visual weight (see PARTNERS in pages.js).
+   Tiles wrap into centred rows so an odd last tile sits in the middle. */
+.section-head-center { text-align: center; }
+.partners {
+  --cols: 2; --gap: 12px; --logo-scale: 0.78;
+  list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--gap);
 }
-.partner img { height: 72px; width: auto; max-width: 100%; object-fit: contain; }
-.partner-dark { background: var(--ink); border-color: var(--ink); }
+@media (min-width: 600px) { .partners { --cols: 3; --gap: 16px; --logo-scale: 0.9; } }
+@media (min-width: 980px) { .partners { --cols: 5; --gap: 18px; --logo-scale: 1; } }
+.partner {
+  flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols));
+  display: grid; place-items: center; height: 136px; padding: 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(16, 27, 59, 0.05);
+  transition: box-shadow 0.25s, translate 0.25s, border-color 0.25s;
+}
+@media (min-width: 980px) { .partner { height: 168px; } }
+.partner:hover { box-shadow: var(--shadow); border-color: var(--line-strong); translate: 0 -3px; }
+.partner img { width: min(calc(var(--logo-w) * var(--logo-scale)), 88%); height: auto; max-height: 82%; object-fit: contain; }
 
 /* ---------- Store header ---------- */
 

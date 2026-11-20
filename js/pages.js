@@ -46,14 +46,20 @@ const BANNERS = [
   { file: 'showcase', href: '#/showcase', alt: 'اعرض مشروعك التقني — شارك ابتكارك مع مجتمع صانع. اعرض مشروعك' },
 ];
 
-/** شركاء النجاح. "dark" puts a logo with white lettering on a dark tile so it stays readable. */
+/**
+ * شركاء النجاح. Files are 240px tall; w is each file's width. Logos are sized so they carry equal
+ * visual weight (equal area) rather than equal height, which makes wide wordmarks tiny and tall marks huge.
+ * scale nudges a logo whose lettering is small for its overall size.
+ */
 const PARTNERS = [
-  { file: 'sunnaa', name: 'صنّاع', w: 726 },
-  { file: 'iot', name: 'نورتك IoT', w: 272 },
-  { file: 'king-khalid-foundation', name: 'مؤسسة الملك خالد', w: 300 },
-  { file: 'saudi-energy', name: 'السعودية للطاقة', w: 192 },
-  { file: 'green-opportunities', name: 'الفرص الخضراء', w: 159, dark: true },
+  { file: 'sunnaa', name: 'صنّاع', w: 1089 },
+  { file: 'iot', name: 'نورتك IoT', w: 408 },
+  { file: 'king-khalid-foundation', name: 'مؤسسة الملك خالد', w: 450, scale: 1.25 },
+  { file: 'saudi-energy', name: 'السعودية للطاقة', w: 288 },
+  { file: 'green-opportunities', name: 'الفرص الخضراء', w: 239 },
 ];
+const LOGO_AREA = 9500; // target logo area in CSS px² on desktop
+const logoWidth = (p) => Math.round(Math.sqrt(LOGO_AREA * (p.w / 240)) * (p.scale ?? 1));
 
 /**
  * The banners as a slider: one banner at a time, advanced every few seconds by app.js (setupCarousel).
@@ -110,12 +116,14 @@ export function legalHTML(business) {
         <span class="legal-value" dir="ltr">${esc(value)}</span>
       </div>
     </div>`;
+  const items = [
+    business.cr ? item('assets/legal/cr.webp', 160, 160, 'السجل التجاري', business.cr) : '',
+    business.vat ? item('assets/legal/vat.png', 55, 63, 'الرقم الضريبي', business.vat) : '',
+  ].join('');
+  if (!items && !business.name) return '';
   return `
-    <p class="legal-name">${esc(business.name)}</p>
-    <div class="legal-items">
-      ${item('assets/legal/cr.webp', 160, 160, 'السجل التجاري', business.cr)}
-      ${item('assets/legal/vat.png', 55, 63, 'الرقم الضريبي', business.vat)}
-    </div>`;
+    ${business.name ? `<p class="legal-name">${esc(business.name)}</p>` : ''}
+    <div class="legal-items">${items}</div>`;
 }
 
 /** The WhatsApp button used on the home screen and service pages; switched off until a number is set. */
@@ -229,14 +237,16 @@ export function homeHTML({ categories, total, contactLink, email, social = [] })
       </section>
 
       <section class="wrap section" aria-labelledby="partners-title">
-        <header class="section-head">
+        <header class="section-head section-head-center">
           <h2 id="partners-title">شركاء النجاح</h2>
+          <p>جهات نفخر بشراكتها ودعمها لمسيرة صانع.</p>
         </header>
         <ul class="partners">
           ${PARTNERS.map(
             (p) => `
-            <li class="partner${p.dark ? ' partner-dark' : ''}">
-              <img src="assets/partners/${p.file}.webp" alt="${esc(p.name)}" width="${p.w}" height="160" loading="lazy" decoding="async">
+            <li class="partner">
+              <img src="assets/partners/${p.file}.webp" alt="${esc(p.name)}" title="${esc(p.name)}"
+                width="${p.w}" height="240" style="--logo-w: ${logoWidth(p)}px" loading="lazy" decoding="async">
             </li>`,
           ).join('')}
         </ul>
